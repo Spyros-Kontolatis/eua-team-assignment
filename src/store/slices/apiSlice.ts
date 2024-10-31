@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import type { HeroResponse } from "./heroSlice";
+import type { HeroResponse } from "../../types";
 
 export const apiSlice = createApi({
   reducerPath: "api",
@@ -7,13 +7,14 @@ export const apiSlice = createApi({
   endpoints: (builder) => ({
     listHeroes: builder.query<
       HeroResponse,
-      { page?: number; rowsPerPage?: number }
+      { page?: number; rowsPerPage?: number; name?: string }
     >({
       query: (args) => {
-        const { page, rowsPerPage } = args;
+        const { page, rowsPerPage, name } = args;
         let url = `/character?`;
         if (page && page > 1) url += `page=${page}&`;
-        if (rowsPerPage) url += `pageSize=${rowsPerPage}`;
+        if (rowsPerPage) url += `pageSize=${rowsPerPage}&`;
+        if (name) url += `name=${name}`;
         return {
           url,
         };

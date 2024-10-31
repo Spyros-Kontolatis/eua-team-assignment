@@ -1,28 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-export interface Hero {
-  name: string;
-  films: Array<string>;
-  tvShows: Array<string>;
-  videoGames: Array<string>;
-  allies: Array<string>;
-  enemies: Array<string>;
-  imageUrl: string;
-}
-export interface HeroResponse {
-  data: Array<Hero>;
-  info: {
-    count: number;
-    nextPage: string | null;
-    previousPage: string | null;
-    totalPages: number;
-  };
-}
-
-export interface HeroState {
-  heroes: Array<Hero>;
-  info: HeroResponse["info"];
-}
+import type { HeroState } from "../../types";
 
 const initialState: HeroState = {
   heroes: [],

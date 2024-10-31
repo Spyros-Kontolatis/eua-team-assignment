@@ -1,5 +1,4 @@
 import * as React from "react";
-import { useTheme } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -12,27 +11,26 @@ import Paper from "@mui/material/Paper";
 import IconButton from "@mui/material/IconButton";
 import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
-import { Hero, HeroResponse } from "../../store/slices/heroSlice";
 import { TableHead } from "@mui/material";
+import TableSortLabel from "@mui/material/TableSortLabel";
+import OutlinedInput from "@mui/material/OutlinedInput";
+import InputLabel from "@mui/material/InputLabel";
+import InputAdornment from "@mui/material/InputAdornment";
+import SearchIcon from "@mui/icons-material/Search";
+import FormControl from "@mui/material/FormControl";
 
-interface TablePaginationActionsProps {
-  count: number;
-  page: number;
-  rowsPerPage: number;
-  onPageChange: (
-    event: React.MouseEvent<HTMLButtonElement>,
-    newPage: number
-  ) => void;
-}
+import Grid from "@mui/material/Grid";
+import Autocomplete from "@mui/material/Autocomplete";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+
+import type { TablePaginationActionsProps, DataTableProps } from "../../types";
 
 const TablePaginationActions = ({
-  count,
   page,
-  rowsPerPage,
   onPageChange,
+  info,
 }: TablePaginationActionsProps) => {
-  const theme = useTheme();
-
   const handleBackButtonClick = (
     event: React.MouseEvent<HTMLButtonElement>
   ) => {
@@ -46,41 +44,41 @@ const TablePaginationActions = ({
   };
   return (
     <Box sx={{ flexShrink: 0, ml: 2.5 }}>
-      <IconButton onClick={handleBackButtonClick} aria-label="previous page">
-        {theme.direction === "rtl" ? (
-          <KeyboardArrowRight />
-        ) : (
-          <KeyboardArrowLeft />
-        )}
+      <IconButton
+        onClick={handleBackButtonClick}
+        aria-label="previous page"
+        disabled={!info.previousPage}
+      >
+        <KeyboardArrowLeft />
       </IconButton>
-      <IconButton onClick={handleNextButtonClick} aria-label="next page">
-        {theme.direction === "rtl" ? (
-          <KeyboardArrowLeft />
-        ) : (
-          <KeyboardArrowRight />
-        )}
+      <IconButton
+        onClick={handleNextButtonClick}
+        aria-label="next page"
+        disabled={!info.nextPage}
+      >
+        <KeyboardArrowRight />
       </IconButton>
     </Box>
   );
 };
 
-export const DataTable = ({
+export const DataTable = <T extends object>({
+  settings,
   rows,
   info,
   page,
   rowsPerPage,
+  search,
+  multipleSelectOptions,
   onPageChange,
   onRowsPerPageChange,
-}: {
-  rows: Hero[];
-  info: HeroResponse["info"];
-  page: number;
-  rowsPerPage: number;
-  onPageChange: (newPage: number) => void;
-  onRowsPerPageChange: (newPage: number) => void;
-}) => {
+  onSearch,
+  onMultipleSelectChange,
+  onSortBy,
+  onRowClick,
+}: DataTableProps<T>) => {
   const handleChangePage = (
-    event: React.MouseEvent<HTMLButtonElement> | null,
+    _event: React.MouseEvent<HTMLButtonElement> | null,
     newPage: number
   ) => {
     onPageChange(newPage);
@@ -92,84 +90,96 @@ export const DataTable = ({
     onRowsPerPageChange(parseInt(event.target.value, 10));
     onPageChange(0);
   };
-  const customCellStyle = {
-    color: "#ebebeb",
-  };
+
   return (
     <TableContainer
       component={Paper}
-      style={{ backgroundColor: "#800020", width: "100%", minWidth: "900px" }}
+      sx={{ width: { xs: 280, sm: 500, md: "100%" } }}
     >
-      <Table sx={{ minWidth: 500 }} aria-label="custom pagination table">
+      <FormControl variant="outlined" sx={{ m: 1 }}>
+        <InputLabel htmlFor="search-input">Search</InputLabel>
+        <OutlinedInput
+          id="search-input"
+          type="text"
+          endAdornment={
+            <InputAdornment position="end">
+              <IconButton aria-label="search" edge="end">
+                <SearchIcon />
+              </IconButton>
+            </InputAdornment>
+          }
+          label="Search"
+          onBlur={(e) => onSearch?.(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter")
+              onSearch?.((e.target as HTMLInputElement).value);
+          }}
+          defaultValue={search}
+        />
+      </FormControl>
+      {multipleSelectOptions && (
+        <Stack spacing={3} width="200px" justifySelf="center">
+          <Autocomplete
+            multiple
+            id="tags-standard"
+            options={multipleSelectOptions}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="standard"
+                label="TV Shows"
+                placeholder="TV Show"
+              />
+            )}
+            onChange={(_e, value) => onMultipleSelectChange?.(value)}
+          />
+        </Stack>
+      )}
+      <Table sx={{ marginTop: "8px" }}>
         <TableHead>
           <TableRow>
-            <TableCell
-              component="th"
-              style={{ ...customCellStyle, fontWeight: "600" }}
-            >
-              Name
-            </TableCell>
-            <TableCell
-              component="th"
-              style={{ ...customCellStyle, fontWeight: "600" }}
-            >
-              TV Shows #
-            </TableCell>
-            <TableCell
-              component="th"
-              style={{ ...customCellStyle, fontWeight: "600" }}
-            >
-              Video Game #
-            </TableCell>
-            <TableCell
-              component="th"
-              style={{ ...customCellStyle, fontWeight: "600" }}
-            >
-              Allies
-            </TableCell>
-            <TableCell
-              component="th"
-              style={{ ...customCellStyle, fontWeight: "600" }}
-            >
-              Enemies
-            </TableCell>
+            {settings.map(({ column, order, key }) => (
+              <TableCell key={column}>
+                {order !== undefined ? (
+                  <TableSortLabel
+                    onClick={() => onSortBy?.(order, key)}
+                    direction={order}
+                  >
+                    {column}
+                  </TableSortLabel>
+                ) : (
+                  <>{column}</>
+                )}
+              </TableCell>
+            ))}
           </TableRow>
         </TableHead>
 
         <TableBody>
-          {rows.map((row) => (
-            <TableRow key={row.name}>
-              <TableCell component="th" scope="row" style={customCellStyle}>
-                {row.name}
-              </TableCell>
-              <TableCell style={customCellStyle} align="center">
-                {row.films.length}
-              </TableCell>
-              <TableCell style={customCellStyle} align="center">
-                {row.videoGames.length}
-              </TableCell>
-              <TableCell style={customCellStyle} align="center">
-                {row.allies}
-              </TableCell>
-              <TableCell style={customCellStyle} align="center">
-                {row.enemies}
-              </TableCell>
+          {rows.map((row, idx) => (
+            <TableRow
+              key={idx}
+              onClick={() => onRowClick?.(row)}
+              sx={{ cursor: "pointer" }}
+            >
+              {settings.map(({ render }, idx) => (
+                <TableCell
+                  style={{ maxWidth: 200 }}
+                  key={idx}
+                  component="th"
+                  scope="row"
+                >
+                  {render(row)}
+                </TableCell>
+              ))}
             </TableRow>
           ))}
         </TableBody>
         <TableFooter>
           <TableRow>
             <TablePagination
-              rowsPerPageOptions={[
-                10,
-                20,
-                50,
-                100,
-                200,
-                500,
-                { label: "All", value: -1 },
-              ]}
-              colSpan={3}
+              rowsPerPageOptions={[10, 20, 50, 100, 200, 500]}
+              colSpan={5}
               count={info.count}
               rowsPerPage={rowsPerPage}
               page={page}
@@ -180,41 +190,15 @@ export const DataTable = ({
                   },
                   native: true,
                 },
-                actions: {
-                  nextButton: {
-                    disabled: !info?.nextPage,
-                  },
-                  previousButton: {
-                    disabled: !info?.previousPage,
-                  },
-                },
               }}
               labelDisplayedRows={({ from, count }) => {
                 return `${from} - ${from + count - 1}`;
               }}
               onPageChange={handleChangePage}
               onRowsPerPageChange={handleChangeRowsPerPage}
-              ActionsComponent={TablePaginationActions}
-              sx={{
-                "& .MuiTablePagination-spacer": {
-                  color: "white",
-                },
-                "& .MuiTablePagination-selectLabel": {
-                  color: "white",
-                },
-                "& .MuiTablePagination-select": {
-                  color: "white",
-                },
-                "& .MuiTablePagination-displayedRows": {
-                  color: "white",
-                },
-                "& .MuiTablePagination-actions": {
-                  color: "white",
-                },
-                "& .MuiSvgIcon-root": {
-                  color: "white",
-                },
-              }}
+              ActionsComponent={(props) => (
+                <TablePaginationActions {...props} info={info} />
+              )}
             />
           </TableRow>
         </TableFooter>
